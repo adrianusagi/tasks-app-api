@@ -1,0 +1,45 @@
+services:
+  task_db:
+    image: postgres:15
+    container_name: task_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: task_app
+      TZ: Asia/Jakarta
+      PGTZ: Asia/Jakarta
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  task_backend:
+    build: 
+      context: ./backend
+    container_name: backend_app
+    restart: unless-stopped
+    ports:
+      - "5555:5000"
+    environment:
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: task_app
+      DB_HOST: task_db
+      DB_PORT: 5432
+    depends_on:
+      - task_db
+
+  task_test:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile.test
+    command: npm test
+    depends_on:
+      - task_db
+    environment:
+      DB_HOST: task_db
+
+volumes:
+  postgres_data:
